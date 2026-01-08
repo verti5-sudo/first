@@ -626,3 +626,18 @@ body {
 .task-item.completed .task-link {
     color: #7f8c8d;
 }
+
+/* タイトル入力欄 */
+.task-title-input {
+    resize: vertical;
+    min-height: 40px;
+    max-height: 150px;
+    font-family: inherit;
+}
+
+/* ヒントテキスト */
+.hint {
+    font-size: 11px;
+    color: #95a5a6;
+    font-weight: normal;
+}

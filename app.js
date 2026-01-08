@@ -693,7 +693,7 @@ class TodoApp {
                     <span class="drag-handle">⋮⋮</span>
                     <button class="toggle-btn ${task.collapsed ? 'collapsed' : ''} ${!hasChildren ? 'hidden' : ''}" data-action="toggle">▼</button>
                     <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} data-action="complete">
-                    <span class="${titleClass}" style="${titleStyle}">${this.linkify(this.escapeHtml(task.title))}</span>
+                    <span class="${titleClass}" style="${titleStyle}">${this.nl2br(this.linkify(this.escapeHtml(task.title)))}</span>
                     <button class="memo-btn ${hasMemo ? 'has-memo' : ''}" data-action="memo" title="メモ">📝</button>
                     <div class="task-actions">
                         <button class="action-btn" data-action="edit" title="編集">✎</button>
@@ -737,6 +737,11 @@ class TodoApp {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // 改行を<br>に変換
+    nl2br(text) {
+        return text.replace(/\n/g, '<br>');
     }
 
     // URLを自動的にリンクに変換
