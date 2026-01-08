@@ -72,6 +72,14 @@ class TodoApp {
         document.getElementById('cancelEdit').addEventListener('click', () => this.closeEditModal());
         document.getElementById('saveTask').addEventListener('click', () => this.saveTask());
 
+        // タイトル入力でEnterキーで保存
+        this.taskTitleInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.saveTask();
+            }
+        });
+
         // カラークリアボタン
         document.getElementById('clearBandColor').addEventListener('click', () => {
             this.bandColorInput.value = '#3498db';
@@ -685,7 +693,7 @@ class TodoApp {
                     <span class="drag-handle">⋮⋮</span>
                     <button class="toggle-btn ${task.collapsed ? 'collapsed' : ''} ${!hasChildren ? 'hidden' : ''}" data-action="toggle">▼</button>
                     <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} data-action="complete">
-                    <span class="${titleClass}" style="${titleStyle}">${this.escapeHtml(task.title)}</span>
+                    <span class="${titleClass}" style="${titleStyle}">${this.linkify(this.escapeHtml(task.title))}</span>
                     <button class="memo-btn ${hasMemo ? 'has-memo' : ''}" data-action="memo" title="メモ">📝</button>
                     <div class="task-actions">
                         <button class="action-btn" data-action="edit" title="編集">✎</button>
@@ -729,6 +737,12 @@ class TodoApp {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // URLを自動的にリンクに変換
+    linkify(text) {
+        const urlPattern = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g;
+        return text.replace(urlPattern, '<a href="$1" class="task-link" target="_blank" rel="noopener noreferrer">$1</a>');
     }
 
     bindTaskEvents() {

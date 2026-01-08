@@ -611,3 +611,18 @@ body {
     outline: none;
     border-color: #3498db;
 }
+
+/* タスク内リンク */
+.task-link {
+    color: #2980b9;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.task-link:hover {
+    color: #1a5276;
+}
+
+.task-item.completed .task-link {
+    color: #7f8c8d;
+}
