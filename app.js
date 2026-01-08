@@ -4,6 +4,7 @@ class TodoApp {
     constructor() {
         this.tasks = [];
         this.currentEditTask = null;
+        this.currentMemoTask = null;
         this.draggedItem = null;
         this.maxDepth = 3;
 
@@ -30,6 +31,10 @@ class TodoApp {
         this.exportBtn = document.getElementById('exportData');
         this.importBtn = document.getElementById('importData');
         this.fileInput = document.getElementById('fileInput');
+
+        // メモポップアップ
+        this.memoPopup = document.getElementById('memoPopup');
+        this.memoText = document.getElementById('memoText');
     }
 
     bindEvents() {
@@ -77,6 +82,20 @@ class TodoApp {
             if (e.key === 'Escape') {
                 this.closeEditModal();
                 this.closeConfirmDialog();
+                this.closeMemoPopup();
+            }
+        });
+
+        // メモポップアップ
+        document.getElementById('closeMemo').addEventListener('click', () => this.closeMemoPopup());
+        document.getElementById('saveMemo').addEventListener('click', () => this.saveMemo());
+
+        // ポップアップ外クリックで閉じる
+        document.addEventListener('click', (e) => {
+            if (this.memoPopup && !this.memoPopup.classList.contains('hidden')) {
+                if (!this.memoPopup.contains(e.target) && !e.target.classList.contains('memo-btn')) {
+                    this.closeMemoPopup();
+                }
             }
         });
     }
@@ -189,6 +208,7 @@ class TodoApp {
             title: '新しいタスク',
             completed: false,
             collapsed: false,
+            memo: '',
             children: [],
             style: {
                 bandColor: null,
@@ -353,6 +373,57 @@ class TodoApp {
         document.getElementById('confirmOk').textContent = '削除';
     }
 
+    // メモポップアップ
+    openMemoPopup(taskId, buttonElement) {
+        const task = this.findTask(taskId);
+        if (!task) return;
+
+        this.currentMemoTask = taskId;
+        this.memoText.value = task.memo || '';
+
+        // ボタンの位置を基準にポップアップを配置
+        const rect = buttonElement.getBoundingClientRect();
+        const popupWidth = 300;
+
+        let left = rect.left;
+        let top = rect.bottom + 10;
+
+        // 画面右端からはみ出る場合は調整
+        if (left + popupWidth > window.innerWidth) {
+            left = window.innerWidth - popupWidth - 20;
+        }
+
+        // 画面下端からはみ出る場合は上に表示
+        if (top + 200 > window.innerHeight) {
+            top = rect.top - 210;
+            this.memoPopup.style.setProperty('--arrow-position', 'bottom');
+        } else {
+            this.memoPopup.style.setProperty('--arrow-position', 'top');
+        }
+
+        this.memoPopup.style.left = `${left}px`;
+        this.memoPopup.style.top = `${top}px`;
+        this.memoPopup.classList.remove('hidden');
+        this.memoText.focus();
+    }
+
+    closeMemoPopup() {
+        this.memoPopup.classList.add('hidden');
+        this.currentMemoTask = null;
+    }
+
+    saveMemo() {
+        if (!this.currentMemoTask) return;
+
+        const task = this.findTask(this.currentMemoTask);
+        if (task) {
+            task.memo = this.memoText.value;
+            this.saveToStorage();
+            this.render();
+        }
+        this.closeMemoPopup();
+    }
+
     // ドラッグ&ドロップ
     handleDragStart(e, taskId) {
         this.draggedItem = taskId;
@@ -452,6 +523,8 @@ class TodoApp {
             ? `border-left-color: ${task.style.bandColor};`
             : '';
 
+        const hasMemo = task.memo && task.memo.trim().length > 0;
+
         return `
             <div class="task-item ${task.completed ? 'completed' : ''}" data-id="${task.id}">
                 <div class="task-content" style="${bandStyle}" draggable="true">
@@ -459,6 +532,7 @@ class TodoApp {
                     <button class="toggle-btn ${task.collapsed ? 'collapsed' : ''} ${!hasChildren ? 'hidden' : ''}" data-action="toggle">▼</button>
                     <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} data-action="complete">
                     <span class="${titleClass}" style="${titleStyle}">${this.escapeHtml(task.title)}</span>
+                    <button class="memo-btn ${hasMemo ? 'has-memo' : ''}" data-action="memo" title="メモ">📝</button>
                     <div class="task-actions">
                         <button class="action-btn" data-action="edit" title="編集">✎</button>
                         ${canAddChild ? `<button class="action-btn" data-action="addChild" title="子タスク追加">+</button>` : ''}
@@ -533,6 +607,9 @@ class TodoApp {
                         break;
                     case 'addChild':
                         this.openEditModal(null, taskId);
+                        break;
+                    case 'memo':
+                        this.openMemoPopup(taskId, el);
                         break;
                     case 'delete':
                         this.openConfirmDialog('このタスクを削除しますか？子タスクも削除されます。', () => {
