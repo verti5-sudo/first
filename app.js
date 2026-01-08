@@ -35,6 +35,11 @@ class TodoApp {
         // メモポップアップ
         this.memoPopup = document.getElementById('memoPopup');
         this.memoText = document.getElementById('memoText');
+
+        // テキスト出力モーダル
+        this.textExportModal = document.getElementById('textExportModal');
+        this.textExportContent = document.getElementById('textExportContent');
+        this.currentExportFormat = 'markdown';
     }
 
     bindEvents() {
@@ -45,6 +50,22 @@ class TodoApp {
         this.exportBtn.addEventListener('click', () => this.exportData());
         this.importBtn.addEventListener('click', () => this.fileInput.click());
         this.fileInput.addEventListener('change', (e) => this.importData(e));
+
+        // テキスト出力
+        document.getElementById('exportText').addEventListener('click', () => this.openTextExportModal());
+        document.getElementById('closeTextExport').addEventListener('click', () => this.closeTextExportModal());
+        document.getElementById('copyTextExport').addEventListener('click', () => this.copyTextExport());
+        document.getElementById('downloadTextExport').addEventListener('click', () => this.downloadTextExport());
+
+        // タブ切り替え
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.currentExportFormat = btn.dataset.format;
+                this.updateTextExportContent();
+            });
+        });
 
         // モーダル操作
         document.getElementById('closeModal').addEventListener('click', () => this.closeEditModal());
@@ -83,7 +104,13 @@ class TodoApp {
                 this.closeEditModal();
                 this.closeConfirmDialog();
                 this.closeMemoPopup();
+                this.closeTextExportModal();
             }
+        });
+
+        // テキスト出力モーダル外クリック
+        this.textExportModal.addEventListener('click', (e) => {
+            if (e.target === this.textExportModal) this.closeTextExportModal();
         });
 
         // メモポップアップ
@@ -422,6 +449,133 @@ class TodoApp {
             this.render();
         }
         this.closeMemoPopup();
+    }
+
+    // テキスト出力モーダル
+    openTextExportModal() {
+        this.currentExportFormat = 'markdown';
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.tab-btn[data-format="markdown"]').classList.add('active');
+        this.updateTextExportContent();
+        this.textExportModal.classList.remove('hidden');
+    }
+
+    closeTextExportModal() {
+        this.textExportModal.classList.add('hidden');
+    }
+
+    updateTextExportContent() {
+        let content = '';
+        switch (this.currentExportFormat) {
+            case 'markdown':
+                content = this.generateMarkdown();
+                break;
+            case 'table':
+                content = this.generateTable();
+                break;
+            case 'plain':
+                content = this.generatePlainText();
+                break;
+        }
+        this.textExportContent.value = content;
+    }
+
+    generateMarkdown(tasks = this.tasks, depth = 0) {
+        let result = '';
+        const indent = '  '.repeat(depth);
+
+        tasks.forEach(task => {
+            const checkbox = task.completed ? '[x]' : '[ ]';
+            result += `${indent}- ${checkbox} ${task.title}\n`;
+
+            if (task.memo && task.memo.trim()) {
+                const memoLines = task.memo.split('\n');
+                memoLines.forEach(line => {
+                    result += `${indent}  > ${line}\n`;
+                });
+            }
+
+            if (task.children && task.children.length > 0) {
+                result += this.generateMarkdown(task.children, depth + 1);
+            }
+        });
+
+        return result;
+    }
+
+    generateTable() {
+        let result = '| 状態 | タスク | メモ |\n';
+        result += '|:----:|--------|------|\n';
+
+        const flattenTasks = (tasks, depth = 0) => {
+            let rows = [];
+            tasks.forEach(task => {
+                const status = task.completed ? '✓' : '○';
+                const indent = '　'.repeat(depth);
+                const title = indent + task.title;
+                const memo = (task.memo || '').replace(/\n/g, ' ').substring(0, 30);
+                rows.push(`| ${status} | ${title} | ${memo}${memo.length >= 30 ? '...' : ''} |`);
+
+                if (task.children && task.children.length > 0) {
+                    rows = rows.concat(flattenTasks(task.children, depth + 1));
+                }
+            });
+            return rows;
+        };
+
+        result += flattenTasks(this.tasks).join('\n');
+        return result;
+    }
+
+    generatePlainText(tasks = this.tasks, depth = 0) {
+        let result = '';
+        const indent = '    '.repeat(depth);
+
+        tasks.forEach(task => {
+            const status = task.completed ? '[完了]' : '[未完]';
+            result += `${indent}${status} ${task.title}\n`;
+
+            if (task.memo && task.memo.trim()) {
+                const memoLines = task.memo.split('\n');
+                memoLines.forEach(line => {
+                    result += `${indent}    メモ: ${line}\n`;
+                });
+            }
+
+            if (task.children && task.children.length > 0) {
+                result += this.generatePlainText(task.children, depth + 1);
+            }
+        });
+
+        return result;
+    }
+
+    copyTextExport() {
+        this.textExportContent.select();
+        document.execCommand('copy');
+
+        // コピー完了を通知
+        const btn = document.getElementById('copyTextExport');
+        const originalText = btn.textContent;
+        btn.textContent = '✓ コピーしました';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }
+
+    downloadTextExport() {
+        const content = this.textExportContent.value;
+        const ext = this.currentExportFormat === 'markdown' ? 'md' : 'txt';
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `todo-list-${new Date().toISOString().slice(0, 10)}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
     // ドラッグ&ドロップ

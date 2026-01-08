@@ -13,6 +13,7 @@
             <div class="header-buttons">
                 <button id="importData" class="btn btn-secondary">📂 読込</button>
                 <button id="exportData" class="btn btn-secondary">💾 保存</button>
+                <button id="exportText" class="btn btn-secondary">📋 テキスト出力</button>
                 <button id="addRootTask" class="btn btn-primary">+ 新規タスク</button>
             </div>
             <input type="file" id="fileInput" accept=".json" style="display: none;">
@@ -103,6 +104,28 @@
         <textarea id="memoText" class="memo-textarea" placeholder="メモを入力..."></textarea>
         <div class="memo-popup-footer">
             <button class="btn btn-small btn-primary" id="saveMemo">保存</button>
+        </div>
+    </div>
+
+    <!-- テキスト出力モーダル -->
+    <div id="textExportModal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>テキスト出力</h2>
+                <button class="modal-close" id="closeTextExport">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="export-format-tabs">
+                    <button class="tab-btn active" data-format="markdown">マークダウン</button>
+                    <button class="tab-btn" data-format="table">テーブル</button>
+                    <button class="tab-btn" data-format="plain">プレーン</button>
+                </div>
+                <textarea id="textExportContent" class="export-textarea" readonly></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="copyTextExport">📋 コピー</button>
+                <button class="btn btn-primary" id="downloadTextExport">💾 ダウンロード</button>
+            </div>
         </div>
     </div>
 

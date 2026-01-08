@@ -562,3 +562,52 @@ body {
     border-right: 8px solid transparent;
     border-bottom: 8px solid #f39c12;
 }
+
+/* テキスト出力モーダル */
+.modal-large {
+    max-width: 700px;
+}
+
+.export-format-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.tab-btn {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    background: #f0f0f0;
+}
+
+.tab-btn.active {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.export-textarea {
+    width: 100%;
+    height: 350px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: none;
+    background: #fafafa;
+}
+
+.export-textarea:focus {
+    outline: none;
+    border-color: #3498db;
+}
