@@ -25,11 +25,21 @@ class TodoApp {
         this.textColorInput = document.getElementById('textColor');
         this.fontSizeSelect = document.getElementById('fontSize');
         this.styleButtons = document.querySelectorAll('.style-btn');
+
+        // エクスポート/インポート
+        this.exportBtn = document.getElementById('exportData');
+        this.importBtn = document.getElementById('importData');
+        this.fileInput = document.getElementById('fileInput');
     }
 
     bindEvents() {
         // 新規タスク追加
         this.addRootTaskBtn.addEventListener('click', () => this.openEditModal(null, null));
+
+        // エクスポート/インポート
+        this.exportBtn.addEventListener('click', () => this.exportData());
+        this.importBtn.addEventListener('click', () => this.fileInput.click());
+        this.fileInput.addEventListener('change', (e) => this.importData(e));
 
         // モーダル操作
         document.getElementById('closeModal').addEventListener('click', () => this.closeEditModal());
@@ -85,6 +95,54 @@ class TodoApp {
 
     saveToStorage() {
         localStorage.setItem('todoTasks', JSON.stringify(this.tasks));
+    }
+
+    // エクスポート（JSONファイルとしてダウンロード）
+    exportData() {
+        const data = JSON.stringify(this.tasks, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `todo-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // インポート（JSONファイルを読み込み）
+    importData(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const imported = JSON.parse(event.target.result);
+                if (Array.isArray(imported)) {
+                    this.openConfirmDialog(
+                        '現在のデータを上書きしますか？',
+                        () => {
+                            this.tasks = imported;
+                            this.saveToStorage();
+                            this.render();
+                        }
+                    );
+                    // 確認ダイアログのボタンテキストを変更
+                    document.getElementById('confirmOk').textContent = '上書き';
+                } else {
+                    alert('無効なファイル形式です');
+                }
+            } catch (err) {
+                alert('ファイルの読み込みに失敗しました');
+            }
+        };
+        reader.readAsText(file);
+
+        // 同じファイルを再選択できるようにリセット
+        e.target.value = '';
     }
 
     // タスク操作
@@ -291,6 +349,8 @@ class TodoApp {
 
     closeConfirmDialog() {
         this.confirmDialog.classList.add('hidden');
+        // ボタンテキストをデフォルトに戻す
+        document.getElementById('confirmOk').textContent = '削除';
     }
 
     // ドラッグ&ドロップ

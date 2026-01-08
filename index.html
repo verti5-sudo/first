@@ -10,7 +10,12 @@
     <div class="app-container">
         <header class="app-header">
             <h1>Todo タスク管理</h1>
-            <button id="addRootTask" class="btn btn-primary">+ 新規タスク</button>
+            <div class="header-buttons">
+                <button id="importData" class="btn btn-secondary">📂 読込</button>
+                <button id="exportData" class="btn btn-secondary">💾 保存</button>
+                <button id="addRootTask" class="btn btn-primary">+ 新規タスク</button>
+            </div>
+            <input type="file" id="fileInput" accept=".json" style="display: none;">
         </header>
 
         <main class="task-container">

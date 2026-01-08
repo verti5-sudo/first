@@ -32,6 +32,11 @@ body {
     color: #333;
 }
 
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
 /* ボタンスタイル */
 .btn {
     padding: 10px 20px;
