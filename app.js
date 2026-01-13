@@ -7,11 +7,163 @@ class TodoApp {
         this.currentMemoTask = null;
         this.draggedItem = null;
         this.maxDepth = 3;
+        this.userId = null;
+        this.unsubscribe = null;
+        this.isSyncing = false;
+        this.isFirebaseReady = false;
 
         this.initElements();
         this.bindEvents();
         this.loadFromStorage();
         this.render();
+        this.initFirebase();
+    }
+
+    // Firebase初期化
+    async initFirebase() {
+        this.updateSyncStatus('connecting', '接続中...');
+
+        // Firebaseモジュールが読み込まれるまで待機
+        const maxWait = 5000;
+        const startTime = Date.now();
+
+        while (!window.firebaseAuth && (Date.now() - startTime) < maxWait) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        if (!window.firebaseAuth) {
+            console.log('Firebase未設定 - ローカルモードで動作');
+            this.updateSyncStatus('offline', 'ローカル');
+            return;
+        }
+
+        try {
+            const { signInAnonymously, onAuthStateChanged } = window.firebaseModules;
+
+            // 認証状態の監視
+            onAuthStateChanged(window.firebaseAuth, async (user) => {
+                if (user) {
+                    this.userId = user.uid;
+                    this.isFirebaseReady = true;
+                    console.log('匿名認証成功:', this.userId);
+                    await this.setupFirestoreSync();
+                } else {
+                    // 匿名ログイン
+                    try {
+                        await signInAnonymously(window.firebaseAuth);
+                    } catch (error) {
+                        console.error('匿名認証エラー:', error);
+                        this.updateSyncStatus('error', '認証エラー');
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Firebase初期化エラー:', error);
+            this.updateSyncStatus('offline', 'ローカル');
+        }
+    }
+
+    // Firestoreリアルタイム同期のセットアップ
+    async setupFirestoreSync() {
+        if (!this.userId || !window.firebaseDb) return;
+
+        const { doc, onSnapshot, getDoc } = window.firebaseModules;
+
+        try {
+            // ドキュメント参照
+            const docRef = doc(window.firebaseDb, 'todos', this.userId);
+
+            // 初回データ取得
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const cloudData = docSnap.data();
+                if (cloudData.tasks && cloudData.updatedAt) {
+                    // クラウドデータが新しければ上書き
+                    const localUpdatedAt = localStorage.getItem('todoUpdatedAt');
+                    if (!localUpdatedAt || cloudData.updatedAt > parseInt(localUpdatedAt)) {
+                        this.tasks = cloudData.tasks;
+                        this.saveToStorage(false); // Firestoreには保存しない
+                        this.render();
+                    }
+                }
+            } else {
+                // クラウドにデータがなければローカルをアップロード
+                await this.syncToFirestore();
+            }
+
+            // リアルタイム更新の監視
+            this.unsubscribe = onSnapshot(docRef, (doc) => {
+                if (doc.exists() && !this.isSyncing) {
+                    const cloudData = doc.data();
+                    const localUpdatedAt = parseInt(localStorage.getItem('todoUpdatedAt') || '0');
+
+                    if (cloudData.updatedAt > localUpdatedAt) {
+                        this.tasks = cloudData.tasks || [];
+                        localStorage.setItem('todoTasks', JSON.stringify(this.tasks));
+                        localStorage.setItem('todoUpdatedAt', cloudData.updatedAt.toString());
+                        this.render();
+                    }
+                }
+                this.updateSyncStatus('synced', '同期済み');
+            }, (error) => {
+                console.error('Firestore監視エラー:', error);
+                this.updateSyncStatus('error', '同期エラー');
+            });
+
+            this.updateSyncStatus('synced', '同期済み');
+        } catch (error) {
+            console.error('Firestore同期エラー:', error);
+            this.updateSyncStatus('error', '同期エラー');
+        }
+    }
+
+    // Firestoreにデータを保存
+    async syncToFirestore() {
+        if (!this.userId || !window.firebaseDb || !this.isFirebaseReady) return;
+
+        const { doc, setDoc } = window.firebaseModules;
+
+        this.isSyncing = true;
+        this.updateSyncStatus('syncing', '同期中...');
+
+        try {
+            const updatedAt = Date.now();
+            const docRef = doc(window.firebaseDb, 'todos', this.userId);
+
+            await setDoc(docRef, {
+                tasks: this.tasks,
+                updatedAt: updatedAt
+            });
+
+            localStorage.setItem('todoUpdatedAt', updatedAt.toString());
+            this.updateSyncStatus('synced', '同期済み');
+        } catch (error) {
+            console.error('Firestore保存エラー:', error);
+            this.updateSyncStatus('error', '同期エラー');
+        } finally {
+            this.isSyncing = false;
+        }
+    }
+
+    // 同期状態表示を更新
+    updateSyncStatus(status, text) {
+        const statusEl = document.getElementById('syncStatus');
+        if (!statusEl) return;
+
+        statusEl.className = 'sync-status ' + status;
+
+        const iconMap = {
+            'connecting': '⏳',
+            'synced': '✓',
+            'syncing': '🔄',
+            'offline': '📴',
+            'error': '⚠️'
+        };
+
+        statusEl.innerHTML = `
+            <span class="sync-icon">${iconMap[status] || '?'}</span>
+            <span class="sync-text">${text}</span>
+        `;
     }
 
     initElements() {
@@ -147,8 +299,11 @@ class TodoApp {
         }
     }
 
-    saveToStorage() {
+    saveToStorage(syncToCloud = true) {
         localStorage.setItem('todoTasks', JSON.stringify(this.tasks));
+        if (syncToCloud) {
+            this.syncToFirestore();
+        }
     }
 
     // エクスポート（JSONファイルとしてダウンロード）

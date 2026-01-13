@@ -641,3 +641,48 @@ body {
     color: #95a5a6;
     font-weight: normal;
 }
+
+/* 同期状態表示 */
+.sync-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    background: #ecf0f1;
+    color: #7f8c8d;
+}
+
+.sync-status.synced {
+    background: #d5f5e3;
+    color: #27ae60;
+}
+
+.sync-status.syncing {
+    background: #fef9e7;
+    color: #f39c12;
+}
+
+.sync-status.offline {
+    background: #fadbd8;
+    color: #e74c3c;
+}
+
+.sync-status.error {
+    background: #fadbd8;
+    color: #e74c3c;
+}
+
+.sync-icon {
+    font-size: 14px;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.sync-status.syncing .sync-icon {
+    animation: spin 1s linear infinite;
+}
