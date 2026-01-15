@@ -8,7 +8,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         // Firebase設定
@@ -25,18 +25,23 @@
         const firebaseApp = initializeApp(firebaseConfig);
         const auth = getAuth(firebaseApp);
         const db = getFirestore(firebaseApp);
+        const googleProvider = new GoogleAuthProvider();
 
         // グローバルに公開
         window.firebaseAuth = auth;
         window.firebaseDb = db;
-        window.firebaseModules = { signInAnonymously, onAuthStateChanged, doc, setDoc, getDoc, onSnapshot };
+        window.googleProvider = googleProvider;
+        window.firebaseModules = { signInWithPopup, signOut, onAuthStateChanged, doc, setDoc, getDoc, onSnapshot };
     </script>
 </head>
 <body>
     <div class="app-container">
         <header class="app-header">
             <h1>Todo タスク管理</h1>
-            <div id="syncStatus" class="sync-status">
+            <div id="userInfo" class="user-info">
+                <button id="loginBtn" class="btn btn-google">Googleでログイン</button>
+            </div>
+            <div id="syncStatus" class="sync-status hidden">
                 <span class="sync-icon">⏳</span>
                 <span class="sync-text">接続中...</span>
             </div>

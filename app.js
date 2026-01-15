@@ -21,7 +21,7 @@ class TodoApp {
 
     // Firebase初期化
     async initFirebase() {
-        this.updateSyncStatus('connecting', '接続中...');
+        this.updateUserInfo(null);
 
         // Firebaseモジュールが読み込まれるまで待機
         const maxWait = 5000;
@@ -33,33 +33,98 @@ class TodoApp {
 
         if (!window.firebaseAuth) {
             console.log('Firebase未設定 - ローカルモードで動作');
-            this.updateSyncStatus('offline', 'ローカル');
             return;
         }
 
+        // ログインボタンのイベント設定
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => this.signInWithGoogle());
+        }
+
         try {
-            const { signInAnonymously, onAuthStateChanged } = window.firebaseModules;
+            const { onAuthStateChanged } = window.firebaseModules;
 
             // 認証状態の監視
             onAuthStateChanged(window.firebaseAuth, async (user) => {
                 if (user) {
                     this.userId = user.uid;
                     this.isFirebaseReady = true;
-                    console.log('匿名認証成功:', this.userId);
+                    this.currentUser = user;
+                    console.log('ログイン成功:', user.displayName || user.uid);
+                    this.updateUserInfo(user);
                     await this.setupFirestoreSync();
                 } else {
-                    // 匿名ログイン
-                    try {
-                        await signInAnonymously(window.firebaseAuth);
-                    } catch (error) {
-                        console.error('匿名認証エラー:', error);
-                        this.updateSyncStatus('error', '認証エラー');
+                    // 未ログイン状態
+                    this.userId = null;
+                    this.isFirebaseReady = false;
+                    this.currentUser = null;
+                    this.updateUserInfo(null);
+                    if (this.unsubscribe) {
+                        this.unsubscribe();
+                        this.unsubscribe = null;
                     }
                 }
             });
         } catch (error) {
             console.error('Firebase初期化エラー:', error);
-            this.updateSyncStatus('offline', 'ローカル');
+        }
+    }
+
+    // Googleログイン
+    async signInWithGoogle() {
+        if (!window.firebaseAuth || !window.googleProvider) return;
+
+        const { signInWithPopup } = window.firebaseModules;
+
+        try {
+            await signInWithPopup(window.firebaseAuth, window.googleProvider);
+        } catch (error) {
+            console.error('Googleログインエラー:', error);
+            alert('ログインに失敗しました');
+        }
+    }
+
+    // ログアウト
+    async signOutUser() {
+        if (!window.firebaseAuth) return;
+
+        const { signOut } = window.firebaseModules;
+
+        try {
+            await signOut(window.firebaseAuth);
+            this.tasks = [];
+            localStorage.removeItem('todoTasks');
+            localStorage.removeItem('todoUpdatedAt');
+            this.render();
+        } catch (error) {
+            console.error('ログアウトエラー:', error);
+        }
+    }
+
+    // ユーザー情報表示を更新
+    updateUserInfo(user) {
+        const userInfoEl = document.getElementById('userInfo');
+        if (!userInfoEl) return;
+
+        if (user) {
+            const photoURL = user.photoURL || '';
+            const displayName = user.displayName || user.email || 'ユーザー';
+
+            userInfoEl.innerHTML = `
+                <div class="user-display">
+                    ${photoURL ? `<img src="${photoURL}" class="user-avatar" alt="">` : ''}
+                    <span class="user-name">${this.escapeHtml(displayName)}</span>
+                </div>
+                <button id="logoutBtn" class="btn-logout">ログアウト</button>
+            `;
+
+            document.getElementById('logoutBtn').addEventListener('click', () => this.signOutUser());
+        } else {
+            userInfoEl.innerHTML = `
+                <button id="loginBtn" class="btn btn-google">Googleでログイン</button>
+            `;
+            document.getElementById('loginBtn').addEventListener('click', () => this.signInWithGoogle());
         }
     }
 
@@ -149,6 +214,14 @@ class TodoApp {
     updateSyncStatus(status, text) {
         const statusEl = document.getElementById('syncStatus');
         if (!statusEl) return;
+
+        // ログイン中のみ表示
+        if (this.userId) {
+            statusEl.classList.remove('hidden');
+        } else {
+            statusEl.classList.add('hidden');
+            return;
+        }
 
         statusEl.className = 'sync-status ' + status;
 

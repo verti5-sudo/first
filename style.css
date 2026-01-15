@@ -686,3 +686,62 @@ body {
 .sync-status.syncing .sync-icon {
     animation: spin 1s linear infinite;
 }
+
+/* ユーザー情報・ログインボタン */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-google {
+    background: #4285f4;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-google:hover {
+    background: #357abd;
+}
+
+.user-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #555;
+}
+
+.user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+}
+
+.user-name {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn-logout {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.btn-logout:hover {
+    background: #c0392b;
+}
