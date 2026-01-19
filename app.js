@@ -43,7 +43,14 @@ class TodoApp {
         }
 
         try {
-            const { onAuthStateChanged } = window.firebaseModules;
+            const { onAuthStateChanged, getRedirectResult } = window.firebaseModules;
+
+            // リダイレクト結果をチェック（モバイルログイン後）
+            try {
+                await getRedirectResult(window.firebaseAuth);
+            } catch (error) {
+                console.error('リダイレクト結果エラー:', error);
+            }
 
             // 認証状態の監視
             onAuthStateChanged(window.firebaseAuth, async (user) => {
@@ -71,14 +78,24 @@ class TodoApp {
         }
     }
 
+    // モバイル判定
+    isMobile() {
+        return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    }
+
     // Googleログイン
     async signInWithGoogle() {
         if (!window.firebaseAuth || !window.googleProvider) return;
 
-        const { signInWithPopup } = window.firebaseModules;
+        const { signInWithPopup, signInWithRedirect } = window.firebaseModules;
 
         try {
-            await signInWithPopup(window.firebaseAuth, window.googleProvider);
+            // モバイルはリダイレクト方式（CAPTCHAが出にくい）
+            if (this.isMobile()) {
+                await signInWithRedirect(window.firebaseAuth, window.googleProvider);
+            } else {
+                await signInWithPopup(window.firebaseAuth, window.googleProvider);
+            }
         } catch (error) {
             console.error('Googleログインエラー:', error);
             alert('ログインに失敗しました');

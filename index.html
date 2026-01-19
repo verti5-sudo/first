@@ -8,7 +8,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         // Firebase設定
@@ -31,7 +31,7 @@
         window.firebaseAuth = auth;
         window.firebaseDb = db;
         window.googleProvider = googleProvider;
-        window.firebaseModules = { signInWithPopup, signOut, onAuthStateChanged, doc, setDoc, getDoc, onSnapshot };
+        window.firebaseModules = { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, doc, setDoc, getDoc, onSnapshot };
     </script>
 </head>
 <body>
